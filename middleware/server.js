@@ -1,25 +1,33 @@
-const express = require('express');
+const express = require("express");
 const app = express();
 const PORT = 3000;
 
-//GET /order
-app.get("/orders",(req,res)=>{
-    res.send("Here is the list of all orders.")
+// GET /orders
+app.get("/orders", (req, res) => {
+    res.send("Here is the list of all orders.");
 });
-//POST/orders
-app.post("/orders",(req,res)=>{
-    res.send("A new order has been created.")
-});
-//GET/users
-app.get("/users",(req,res)=>{
-    res.send("Here is the list of all the user.")
-});
-//POST/Users
-app.post("/users",(req,res)=>{
-    res.send("A New user has been added.");
-})
 
+// POST /orders
+app.post("/orders", (req, res) => {
+    res.send("A new order has been created.");
+});
 
-app.listen(PORT,(req,res)=>{
-    console.log(`Server is running on ${PORT}`);
-})
+// GET /users
+app.get("/users", (req, res) => {
+    res.send("Here is the list of all users.");
+});
+
+// POST /users
+app.post("/users", (req, res) => {
+    res.send("A new user has been added.");
+});
+
+// 404 Route
+app.use((req, res) => {
+    res.status(404).send("<h1>404 - Page Not Found</h1>");
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
