@@ -3,8 +3,8 @@ const express = require("express");
 // const bookRouter = require("./routes/books");
 // const courses = require('./routes/courses')
 // const student = require('./routes/student')
-// const userRoutes = require('./routes/userRoutes');
-// const cartRoutes = require("./routes/cartRoutes");
+const userRoutes = require('./routes/userRoutes');
+const cartRoutes = require("./routes/cartRoutes");
 const productRoutes = require("./routes/productRoutes");
 
 const app = express();
@@ -18,8 +18,8 @@ app.use(express.json());
 // app.use("/students",student)
 // app.use("/courses",courses)
 
-// app.use("/users", userRoutes);
-// app.use("/cart", cartRoutes);
+app.use("/users", userRoutes);
+app.use("/cart", cartRoutes);
 app.use("/products", productRoutes);
 
 
