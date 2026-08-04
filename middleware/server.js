@@ -1,32 +1,15 @@
 const express = require("express");
 const app = express();
 const PORT = 3000;
+const router = require("./routes/index");
 
-// GET /orders
-app.get("/orders", (req, res) => {
-    res.send("Here is the list of all orders.");
-});
+app.use(express.json());
 
-// POST /orders
-app.post("/orders", (req, res) => {
-    res.send("A new order has been created.");
-});
+app.use("/",router);
 
-// GET /users
-app.get("/users", (req, res) => {
-    res.send("Here is the list of all users.");
-});
-
-// POST /users
-app.post("/users", (req, res) => {
-    res.send("A new user has been added.");
-});
-
-// 404 Route
-app.use((req, res) => {
-    res.status(404).send("<h1>404 - Page Not Found</h1>");
-});
-
+app.use((req,res)=>{
+    res.status(404).send("Route not found");
+})
 // Start server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
