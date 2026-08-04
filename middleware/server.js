@@ -3,9 +3,9 @@ const express = require("express");
 // const bookRouter = require("./routes/books");
 // const courses = require('./routes/courses')
 // const student = require('./routes/student')
-const userRoutes = require('./routes/userRoutes');
+// const userRoutes = require('./routes/userRoutes');
+// const cartRoutes = require("./routes/cartRoutes");
 const productRoutes = require("./routes/productRoutes");
-const cartRoutes = require("./routes/cartRoutes");
 
 const app = express();
 const PORT = 3000;
@@ -18,9 +18,9 @@ app.use(express.json());
 // app.use("/students",student)
 // app.use("/courses",courses)
 
-app.use("/users", userRoutes);
+// app.use("/users", userRoutes);
+// app.use("/cart", cartRoutes);
 app.use("/products", productRoutes);
-app.use("/cart", cartRoutes);
 
 
 app.use((req,res)=>{
