@@ -7,6 +7,6 @@ const {
 } = require("../controllers/cartController");
 
 router.get("/:userId", getCartForUser);
-router.post("/:userId", addProductToCart);
+router.post("/:userId", addProductToCart); 
 
 module.exports = router;
