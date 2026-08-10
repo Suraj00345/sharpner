@@ -36,7 +36,26 @@ const updateEntry = (req, res) => {
   });
 };
 
+const deleteEntry = (req, res) => {
+  const { id } = req.params;
+  const deleteQuery = `DELETE from students where id= ?`;
+
+  db.execute(deleteQuery, [id], (err, results) => {
+    if (err) {
+      console.log(err.message);
+      res.status(500).send(err.message);
+    }
+
+    if (results.affectedRows === 0) {
+      res.status(404).send("Student is not found");
+      return;
+    }
+    res.status(200).send(`User with ${id} is deleted`);
+  });
+};
+
 module.exports = {
   addEntries,
   updateEntry,
+  deleteEntry,
 };
