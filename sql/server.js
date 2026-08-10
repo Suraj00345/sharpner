@@ -18,19 +18,56 @@ connection.connect((err) => {
   }
   console.log("Connection has been created");
 
-  const creationQuery = `create table Students(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(20),
-    email VARCHAR(20)
-  )`;
+  // Schema creation queries for Bus Booking System
+  const createUsersTable = `
+    CREATE TABLE IF NOT EXISTS Users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE
+    )
+  `;
 
-  connection.execute(creationQuery, (err) => {
-    if (err) {
-      console.log(err);
-      connection.end();
-      return;
-    }
-    console.log("Table is created");
+  const createBusesTable = `
+    CREATE TABLE IF NOT EXISTS Buses (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      busNumber VARCHAR(50) NOT NULL UNIQUE,
+      totalSeats INT NOT NULL,
+      availableSeats INT NOT NULL
+    )
+  `;
+
+  const createBookingsTable = `
+    CREATE TABLE IF NOT EXISTS Bookings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      seatNumber INT NOT NULL
+    )
+  `;
+
+  const createPaymentsTable = `
+    CREATE TABLE IF NOT EXISTS Payments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      amountPaid DECIMAL(10, 2) NOT NULL,
+      paymentStatus VARCHAR(50) NOT NULL
+    )
+  `;
+  const tables = [
+    { name: "Users", query: createUsersTable },
+    { name: "Buses", query: createBusesTable },
+    { name: "Bookings", query: createBookingsTable },
+    { name: "Payments", query: createPaymentsTable },
+  ];
+
+  // Execute queries
+  tables.forEach((table) => {
+    connection.execute(table.query, (err) => {
+      if (err) {
+        console.log(`Error creating ${table.name} table:`, err);
+      } else {
+        console.log(
+          `${table.name} table created successfully (or already exists).`,
+        );
+      }
+    });
   });
 });
 
