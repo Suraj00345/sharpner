@@ -1,10 +1,10 @@
 const db = require("../utils/db-connection");
 
 const addEntries = (req, res) => {
-  const { email, name } = req.body;
-  const insertQuery = "INSERT INTO students(email,name) VALUES (?,?)";
+  const { name, email, age } = req.body;
+  const insertQuery = "INSERT INTO students(name,email,age) VALUES (?,?,?)";
 
-  db.execute(insertQuery, [email, name], (err) => {
+  db.execute(insertQuery, [name, email, age], (err) => {
     if (err) {
       console.log(err.message);
       res.status(500).send(err.message);
@@ -16,11 +16,12 @@ const addEntries = (req, res) => {
   });
 };
 
-const updateEntry = (req, res) => {
+const getStudentsById = (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
-  const updateQuery = "UPDATE students set name= ? where id= ?";
-  db.execute(updateQuery, [name, id], (err, result) => {
+
+  const query = "select * from students where id = ?";
+
+  db.execute(query, [id], (err, result) => {
     if (err) {
       console.log(err.message);
       res.status(500).send(err.message);
@@ -29,10 +30,35 @@ const updateEntry = (req, res) => {
     }
 
     if (result.affectedRows === 0) {
-      res.status(404).send("Student not found");
-      return;
+      return res
+        .status(404)
+        .json({ message: `Student with ID ${id} not found.` });
     }
-    res.status(200).send("user has been updated");
+    console.log(` Fetched Student ID ${id}`);
+    return res.status(200).json(result);
+  });
+};
+
+const updateEntry = (req, res) => {
+  const { id } = req.params;
+  const { name, email, age } = req.body;
+
+  const updateQuery =
+    "UPDATE students SET name = ?, email = ?, age = ? WHERE id = ?";
+
+  // Pass id as the 4th argument in the array to match the 4 placeholders
+  db.execute(updateQuery, [name, email, age, id], (err, result) => {
+    if (err) {
+      console.error("Database update error:", err.message);
+      // Send a generic error message and DO NOT call db.end()
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    return res.status(200).json({ message: "Student updated successfully" });
   });
 };
 
@@ -58,4 +84,5 @@ module.exports = {
   addEntries,
   updateEntry,
   deleteEntry,
+  getStudentsById,
 };

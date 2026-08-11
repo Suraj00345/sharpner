@@ -47,11 +47,12 @@ connection.connect((err) => {
     )
   `;
 
-  const createStudentTable = `
-    CREATE TABLE IF NOT EXISTS Students (
+  const createStudentsTable = `
+    CREATE TABLE IF NOT EXISTS students (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(50) NOT NULL,
-      email VARCHAR(50) NOT NULL
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      age INT NOT NULL
     )
   `;
   const tables = [
@@ -59,7 +60,7 @@ connection.connect((err) => {
     { name: "Buses", query: createBusesTable },
     { name: "Bookings", query: createBookingsTable },
     { name: "Payments", query: createPaymentsTable },
-    { name: "Students", query: createStudentTable },
+    { name: "Students", query: createStudentsTable },
   ];
 
   // Execute queries
