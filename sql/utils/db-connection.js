@@ -1,9 +1,15 @@
 const { Sequelize } = require("sequelize");
 
-const sequelize = new Sequelize("testdb", "root", "Suraj123", {
-  host: "localhost",
-  dialect: "mysql",
-});
+const sequelize = new Sequelize(
+  process.env.DB_NAME || "testdb",
+  process.env.DB_USER || "root",
+  process.env.DB_PASSWORD || "Suraj123",
+  {
+    host: process.env.DB_HOST || "localhost",
+    dialect: "mysql",
+    logging: false, // Set to console.log to see raw generated SQL queries
+  },
+);
 
 (async () => {
   try {

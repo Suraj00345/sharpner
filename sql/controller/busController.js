@@ -1,49 +1,49 @@
-const db = require("../utils/db-connection");
+const { Op } = require("sequelize");
+const User = require("../models/User");
+const Bus = require("../models/Bus");
 
-const addUser = (req, res) => {
+// POST /users
+const addUser = async (req, res) => {
   const { name, email } = req.body;
 
   if (!name || !email) {
-    return res.status(400).json({ error: "name and email are required." });
+    return res.status(400).json({ error: "Name and email are required." });
   }
 
-  const insertQuery = "INSERT INTO users (name,email) VALUES (?,?)";
-  db.execute(insertQuery, [name, email], (err, result) => {
-    if (err) {
-      console.log(err.message);
-      res.status(500).send(err.message);
-      db.end();
-      return;
-    }
+  try {
+    const newUser = await User.create({ name, email });
 
-    if (result.affectedRows === 0) {
-      res.status(404).send("user not found");
-      return;
+    return res.status(201).json({
+      message: "User created successfully",
+      user: newUser,
+    });
+  } catch (err) {
+    console.error("Error creating user:", err);
+    if (err.name === "SequelizeUniqueConstraintError") {
+      return res.status(400).json({ error: "Email already exists." });
     }
-    res.status(200).send("user has been updated");
-  });
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-const getUser = (req, res) => {
-  const selectQuery = "SELECT * FROM users";
-  db.execute(selectQuery, (err, result) => {
-    // 1. Handle MySQL errors first
-    if (err) {
-      console.error("Database query error:", err);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+// GET /users
+const getUser = async (req, res) => {
+  try {
+    const users = await User.findAll();
 
-    // 2. Check if the returned array is empty
-    if (result.length === 0) {
+    if (users.length === 0) {
       return res.status(404).json({ message: "No users found" });
     }
 
-    // 3. Send the fetched data as JSON
-    return res.status(200).json(result);
-  });
+    return res.status(200).json(users);
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-const addBuses = (req, res) => {
+// POST /buses
+const addBuses = async (req, res) => {
   const { busNumber, totalSeats, availableSeats } = req.body;
 
   if (!busNumber || totalSeats === undefined || availableSeats === undefined) {
@@ -52,78 +52,72 @@ const addBuses = (req, res) => {
     });
   }
 
-  const insertQuery =
-    "INSERT INTO Buses (busNumber,totalSeats,availableSeats) VALUES (?,?,?)";
-  db.execute(
-    insertQuery,
-    [busNumber, totalSeats, availableSeats],
-    (err, result) => {
-      if (err) {
-        console.log(err.message);
-        res.status(500).send(err.message);
-        db.end();
-        return;
-      }
+  try {
+    const newBus = await Bus.create({
+      busNumber,
+      totalSeats,
+      availableSeats,
+    });
 
-      if (result.affectedRows === 0) {
-        res.status(404).send("bus not added");
-        return;
-      }
-      res.status(200).send("Bus is added successfully");
-    },
-  );
+    return res.status(201).json({
+      message: "Bus added successfully",
+      bus: newBus,
+    });
+  } catch (err) {
+    console.error("Error creating bus:", err);
+    if (err.name === "SequelizeUniqueConstraintError") {
+      return res.status(400).json({ error: "Bus number already exists." });
+    }
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-const getBuses = (req, res) => {
-  const selectQuery = "SELECT * FROM buses";
-  db.execute(selectQuery, (err, result) => {
-    // 1. Handle MySQL errors first
-    if (err) {
-      console.error("Database query error:", err);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+// GET /buses
+const getBuses = async (req, res) => {
+  try {
+    const buses = await Bus.findAll();
 
-    // 2. Check if the returned array is empty
-    if (result.length === 0) {
+    if (buses.length === 0) {
       return res.status(404).json({ message: "No buses found" });
     }
 
-    // 3. Send the fetched data as JSON
-    return res.status(200).json(result);
-  });
+    return res.status(200).json(buses);
+  } catch (err) {
+    console.error("Error fetching buses:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-const getBusesBySeats = (req, res) => {
-  // Extract min seats from route parameters e.g., /buses/available/10
+// GET /buses/available/:seats
+const getBusesBySeats = async (req, res) => {
   const minSeats = parseInt(req.params.seats, 10);
 
-  // Validate parameter
   if (isNaN(minSeats)) {
-    return res.status(400).json({ error: "Seat count must be a valid number" });
+    return res
+      .status(400)
+      .json({ error: "Seat count must be a valid number." });
   }
 
-  // Use ? parameter placeholder to prevent SQL injection
-  const selectQuery = "SELECT * FROM Buses WHERE availableSeats > ?";
+  try {
+    const buses = await Bus.findAll({
+      where: {
+        availableSeats: {
+          [Op.gt]: minSeats, // Equivalent to WHERE availableSeats > minSeats
+        },
+      },
+    });
 
-  db.execute(selectQuery, [minSeats], (err, results) => {
-    // 1. Handle MySQL errors first
-    if (err) {
-      console.error("Database query error:", err);
-      return res.status(500).json({ error: "Internal Server Error" });
+    if (buses.length === 0) {
+      return res.status(404).json({
+        message: `No buses found with more than ${minSeats} available seats.`,
+      });
     }
 
-    // 2. Check if no matching buses were found
-    if (results.length === 0) {
-      return res
-        .status(404)
-        .json({
-          message: `No buses found with more than ${minSeats} available seats.`,
-        });
-    }
-
-    // 3. Send matching buses array
-    return res.status(200).json(results);
-  });
+    return res.status(200).json(buses);
+  } catch (err) {
+    console.error("Error filtering buses:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 module.exports = { addUser, getUser, addBuses, getBuses, getBusesBySeats };
