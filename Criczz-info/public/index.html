@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Database & Search</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.8/axios.min.js"></script>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Player Management System</h1>
+
+    <!-- Player Registration Form -->
+    <section class="card">
+      <h2>Add New Player</h2>
+      <form id="playerForm" onsubmit="handleFormSubmit(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Full Name *</label>
+            <input type="text" id="name" required placeholder="e.g. Sachin Tendulkar">
+          </div>
+
+          <div class="form-group">
+            <label for="dob">Date of Birth *</label>
+            <input type="date" id="dob" required>
+          </div>
+
+          <div class="form-group">
+            <label for="photo_url">Photo URL</label>
+            <input type="url" id="photo_url" placeholder="https://example.com/image.jpg">
+          </div>
+
+          <div class="form-group">
+            <label for="birth_place">Birth Place</label>
+            <input type="text" id="birth_place" placeholder="e.g. Mumbai">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="career">Career Overview</label>
+            <textarea id="career" rows="3" placeholder="Brief summary of career..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="matches">Matches</label>
+            <input type="number" id="matches" value="0" min="0">
+          </div>
+
+          <div class="form-group">
+            <label for="score">Total Runs/Score</label>
+            <input type="number" id="score" value="0" min="0">
+          </div>
+
+          <div class="form-group">
+            <label for="fifties">50s (Fifties)</label>
+            <input type="number" id="fifties" value="0" min="0">
+          </div>
+
+          <div class="form-group">
+            <label for="centuries">100s (Centuries)</label>
+            <input type="number" id="centuries" value="0" min="0">
+          </div>
+
+          <div class="form-group">
+            <label for="wickets">Wickets</label>
+            <input type="number" id="wickets" value="0" min="0">
+          </div>
+
+          <div class="form-group">
+            <label for="average">Batting Average</label>
+            <input type="number" id="average" step="0.01" value="0.00" min="0">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">Save Player</button>
+      </form>
+    </section>
+
+    <!-- Search Section -->
+    <section class="card">
+      <h2>Search Player</h2>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Enter player name to search..." onkeyup="handleSearch()">
+      </div>
+
+      <div id="searchResults" class="results-grid"></div>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
