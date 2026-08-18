@@ -5,6 +5,8 @@ const sequelize = require("./config/database");
 
 const expenseRoutes = require("./routes/expenseRoutes");
 const userRoutes = require("./routes/userRoutes");
+const User = require("./models/User");
+const Expense = require("./models/Expense");
 
 const app = express();
 
@@ -16,6 +18,9 @@ app.use(express.static(path.join(__dirname, "public")));
 // API Routes
 app.use("/api", expenseRoutes);
 app.use("/api/auth", userRoutes);
+
+User.hasMany(Expense);
+Expense.belongsTo(User);
 
 sequelize
   .sync()
