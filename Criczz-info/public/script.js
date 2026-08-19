@@ -90,6 +90,120 @@ function renderPlayers(players) {
         </div>
       </div>
     `;
+
+    card.addEventListener("click", () => {
+      showPlayerDetails(player);
+    });
     container.appendChild(card);
   });
+}
+
+function showPlayerDetails(player) {
+  const defaultPhoto = "https://via.placeholder.com/600x600?text=No+Photo";
+
+  //create overlay
+  const overlay = document.createElement("div");
+  overlay.className = "player-modal";
+
+  overlay.innerHTML = `
+    <div class="player-modal-content">
+
+      <button class="close-btn">&times;</button>
+
+      <!-- Left side -->
+      <div class="player-modal-left">
+
+        <img
+          src="${player.photo_url || defaultPhoto}"
+          alt="${player.name}"
+          onerror="this.src='${defaultPhoto}'"
+        >
+
+      </div>
+
+      <!-- Right side -->
+      <div class="player-modal-right">
+
+        <h1>${player.name}</h1>
+
+        <div class="player-details">
+
+          <div class="detail-item">
+            <span>Date of Birth</span>
+            <strong>${player.dob || "N/A"}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Birth Place</span>
+            <strong>${player.birth_place || "N/A"}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Career</span>
+            <strong>${player.career || "N/A"}</strong>
+          </div>
+
+        </div>
+
+        <h2>Career Statistics</h2>
+
+        <div class="modal-stats">
+
+          <div class="stat">
+            <span>Matches</span>
+            <strong>${player.matches || 0}</strong>
+          </div>
+
+          <div class="stat">
+            <span>Runs</span>
+            <strong>${player.score || 0}</strong>
+          </div>
+
+          <div class="stat">
+            <span>Fifties</span>
+            <strong>${player.fifties || 0}</strong>
+          </div>
+
+          <div class="stat">
+            <span>Centuries</span>
+            <strong>${player.centuries || 0}</strong>
+          </div>
+
+          <div class="stat">
+            <span>Wickets</span>
+            <strong>${player.wickets || 0}</strong>
+          </div>
+
+          <div class="stat">
+            <span>Average</span>
+            <strong>${player.average || 0}</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const closeBtn = overlay.querySelector('.close-btn');
+
+  closeBtn.addEventListener('click',()=>{
+    overlay.remove();
+  });
+
+  overlay.addEventListener('click',(event)=>{
+    if(event.target === overlay){
+      overlay.remove();
+    }
+  });
+
+  document.addEventListener('keydown',function handleEscape(event){
+    if(event.key === 'Escape'){
+      overlay.remove();
+      document.removeEventListener('keydown',handleEscape);
+    }
+  })
 }
