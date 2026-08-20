@@ -50,10 +50,25 @@
         </div>
 
         <button type="submit" class="btn-submit">Add Expense</button>
+        <button id="leaderboardBtn">
+          Show Leaderboard
+        </button>
       </form>
 
       <h3>Expenses List</h3>
       <ul id="expenseList"></ul>
+    </div>
+    <!-- modal -->
+    <div id="leaderboardModal" class="leaderboard-modal" style="display: none">
+      <div class="leaderboard-content">
+        <button id="closeLeaderboard" class="close-btn">✕</button>
+
+        <h2>🏆 Expense Leaderboard</h2>
+
+        <p>Users who spent more appear at the top.</p>
+
+        <div id="leaderboardList">Loading...</div>
+      </div>
     </div>
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     <script src="main.js"></script>

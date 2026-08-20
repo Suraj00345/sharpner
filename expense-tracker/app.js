@@ -9,6 +9,7 @@ const sequelize = require("./config/database");
 const expenseRoutes = require("./routes/expenseRoutes");
 const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const premiumController = require("./routes/premiumRoutes");
 
 // models
 const User = require("./models/User");
@@ -36,6 +37,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/api", expenseRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/premium", premiumController);
 
 // ======================================================
 // USER - EXPENSE RELATION
