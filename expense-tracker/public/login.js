@@ -2,10 +2,11 @@ const loginForm = document.querySelector("form");
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
 
-  //validation check
+  // Validation
   if (!email || !password) {
     alert("Email and password are required");
     return;
@@ -20,26 +21,25 @@ loginForm.addEventListener("submit", async (event) => {
       body: JSON.stringify({
         email,
         password,
-      }), 
+      }),
     });
-    const data = await response.json();
 
-    //handle API errors
+    // Convert response to JSON
+    const data = await response.json();
+    // Handle API errors
     if (!response.ok) {
       alert(data.message);
       return;
     }
     // Login successful
     alert(data.message);
-
     console.log("Logged in user:", data.user);
-
-    // Store user information
+    // Store logged-in user
     localStorage.setItem("user", JSON.stringify(data.user));
-
+    // Check stored user
+    console.log("Stored user:", JSON.parse(localStorage.getItem("user")));
     // Clear form
     loginForm.reset();
-
     // Redirect after login
     window.location.href = "index.html";
   } catch (error) {

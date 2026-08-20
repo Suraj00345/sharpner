@@ -2,7 +2,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
@@ -17,10 +17,46 @@ body {
 .container {
   background: #ffffff;
   width: 100%;
-  max-width: 550px;
+  max-width: 650px;
   padding: 30px;
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.header-div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-div h2{
+  text-decoration: underline;
+}
+
+#premiumBtn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  animation: colorChange 6s infinite alternate ease-in-out;
+}
+
+@keyframes colorChange {
+  0% {
+    background-color: #3b82f6; /* Blue */
+  }
+  33% {
+    background-color: #8b5cf6; /* Purple */
+  }
+  66% {
+    background-color: #ec4899; /* Pink */
+  }
+  100% {
+    background-color: #10b981; /* Green */
+  }
 }
 
 h2 {
@@ -46,7 +82,8 @@ label {
   color: #555;
 }
 
-input, select {
+input,
+select {
   width: 100%;
   padding: 10px;
   border: 1px solid #ccc;

@@ -3,15 +3,30 @@ const Expense = require("../models/Expense");
 //create Expence(POST)
 const addExpense = async (req, res) => {
   try {
-    const { amount, description, category } = req.body;
+    console.log("Request body:", req.body);
+
+    const { amount, description, category, userId } = req.body;
+
+    console.log("userId:", userId);
+
     const newExpense = await Expense.create({
       amount,
       description,
       category,
+      userId,
     });
-    res.status(201).json({ success: true, expense: newExpense });
+
+    res.status(201).json({
+      success: true,
+      expense: newExpense,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error("Add expense error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
 
