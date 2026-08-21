@@ -387,7 +387,7 @@ leaderboardBtn.addEventListener("click", async () => {
   //loading message
   leaderboardList.innerHTML = "<p>Loading leaderboard... </p>";
   try {
-    const response = await axios.get(`${API_URL}/premium/leaderboard`);
+    const response = await axios.get(`${API_URL}premium/leaderboard`);
     const data = response.data;
     console.log("Leaderboard:", data);
     if (!data.success) {
