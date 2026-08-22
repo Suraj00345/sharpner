@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
 const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
 const { sendResetEmail } = require("../services/nodeMailService");
 
@@ -81,9 +82,18 @@ const login = async (req, res) => {
       });
     }
 
+    // ADDED: Generate a JWT Token
+    // We put userId in the payload so the auth middleware can find it later
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET || "your_development_secret", // Keep this safe in your .env file
+      { expiresIn: "24h" }, // Token will expire in 24 hours
+    );
+
     // Login successful
     return res.status(200).json({
       message: "Login successful",
+      token: token, // ADDED: Send the token back to the frontend
       user: {
         id: user.id,
         name: user.name,

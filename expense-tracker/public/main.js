@@ -27,6 +27,7 @@ const leaderboardBtn = document.getElementById("leaderboardBtn");
 const leaderboardModal = document.getElementById("leaderboardModal");
 const closeLeaderboard = document.getElementById("closeLeaderboard");
 const leaderboardList = document.getElementById("leaderboardList");
+const downloadBtn = document.getElementById("downloadBtn");
 
 // ======================================================
 // PREMIUM UI
@@ -37,6 +38,7 @@ function checkPremiumStatus() {
   if (currentUser.isPremium) {
     if (premiumBtn) premiumBtn.style.display = "none";
     if (leaderboardBtn) leaderboardBtn.style.display = "inline-block";
+    if (downloadBtn) downloadBtn.style.display = "inline-block";
 
     if (premiumMessage) {
       premiumMessage.innerHTML = `
@@ -47,6 +49,7 @@ function checkPremiumStatus() {
     }
   } else {
     if (leaderboardBtn) leaderboardBtn.style.display = "none";
+    if (downloadBtn) downloadBtn.style.display = "none";
     if (premiumBtn) premiumBtn.style.display = "inline-block";
   }
 }
@@ -72,7 +75,10 @@ async function handleFormSubmit(event) {
         event.target.category.value = category;
       }
     } catch (aiErr) {
-      console.warn("AI categorization failed, using selected/default category:", aiErr.message);
+      console.warn(
+        "AI categorization failed, using selected/default category:",
+        aiErr.message,
+      );
     }
 
     const expenseDetails = {
@@ -84,14 +90,17 @@ async function handleFormSubmit(event) {
 
     // UPDATE EXPENSE
     if (editExpenseId) {
-      const res = await axios.put(`${API_URL}expenses/${editExpenseId}`, expenseDetails);
+      const res = await axios.put(
+        `${API_URL}expenses/${editExpenseId}`,
+        expenseDetails,
+      );
 
       const oldElement = document.getElementById(`expense-${editExpenseId}`);
       if (oldElement) oldElement.remove();
 
       showExpenseOnScreen(res.data.expense);
       editExpenseId = null;
-    } 
+    }
     // CREATE EXPENSE
     else {
       const res = await axios.post(`${API_URL}expenses`, expenseDetails);
@@ -100,7 +109,10 @@ async function handleFormSubmit(event) {
 
     event.target.reset();
   } catch (error) {
-    console.error("Error saving expense:", error.response?.data || error.message);
+    console.error(
+      "Error saving expense:",
+      error.response?.data || error.message,
+    );
     alert(error.response?.data?.message || "Failed to save expense.");
   }
 }
@@ -118,12 +130,15 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     // Filter by current user
     const userExpenses = expenses.filter(
-      (expense) => Number(expense.userId) === Number(currentUser.id)
+      (expense) => Number(expense.userId) === Number(currentUser.id),
     );
 
     userExpenses.forEach((expense) => showExpenseOnScreen(expense));
   } catch (error) {
-    console.error("Error fetching expenses:", error.response?.data || error.message);
+    console.error(
+      "Error fetching expenses:",
+      error.response?.data || error.message,
+    );
   }
 });
 
@@ -135,7 +150,10 @@ async function deleteExpense(id, element) {
     await axios.delete(`${API_URL}expenses/${id}`);
     element.remove();
   } catch (error) {
-    console.error("Error deleting expense:", error.response?.data || error.message);
+    console.error(
+      "Error deleting expense:",
+      error.response?.data || error.message,
+    );
   }
 }
 
@@ -179,7 +197,8 @@ function showExpenseOnScreen(expense) {
 // ======================================================
 // CASHFREE PAYMENT
 // ======================================================
-const cashfree = typeof Cashfree !== "undefined" ? Cashfree({ mode: "sandbox" }) : null;
+const cashfree =
+  typeof Cashfree !== "undefined" ? Cashfree({ mode: "sandbox" }) : null;
 
 if (premiumBtn) {
   premiumBtn.addEventListener("click", async () => {
@@ -280,7 +299,14 @@ if (leaderboardBtn) {
 
         const rank = document.createElement("span");
         rank.className = "leaderboard-rank";
-        rank.textContent = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`;
+        rank.textContent =
+          index === 0
+            ? "🥇"
+            : index === 1
+              ? "🥈"
+              : index === 2
+                ? "🥉"
+                : `#${index + 1}`;
 
         const name = document.createElement("span");
         name.className = "leaderboard-name";
@@ -296,7 +322,10 @@ if (leaderboardBtn) {
         leaderboardList.appendChild(row);
       });
     } catch (error) {
-      console.error("Leaderboard error:", error.response?.data || error.message);
+      console.error(
+        "Leaderboard error:",
+        error.response?.data || error.message,
+      );
       leaderboardList.innerHTML = "<p>Unable to load leaderboard.</p>";
     }
   });
@@ -318,3 +347,72 @@ if (leaderboardModal) {
     }
   });
 }
+
+// ======================================================
+// DOWNLOAD BUTTON
+// ======================================================
+
+downloadBtn.addEventListener("click", async () => {
+  try {
+    // 1. Get the JWT token you saved during login
+    // (Assuming you stored it in localStorage as 'token')
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please log in to download reports.");
+      return;
+    }
+
+    // Optional: Change button text to show it's loading
+    const downloadBtn = document.getElementById("downloadBtn");
+    const originalText = downloadBtn.innerText;
+    downloadBtn.innerText = "Generating PDF...";
+    downloadBtn.disabled = true;
+
+    // 2. Make the request to your backend route
+    // UPDATE THIS URL to match your actual backend route!
+    const response = await fetch(
+      "http://localhost:3000/api/reports/downloadPdf",
+      {
+        method: "GET",
+        headers: {
+         "Authorization": `Bearer ${token}` // Send the token for your userAuth middleware
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to download report");
+    }
+
+    // 3. Convert the response into a Blob (a file-like object of immutable, raw data)
+    const blob = await response.blob();
+
+    // 4. Create a temporary URL for the Blob
+    const downloadUrl = window.URL.createObjectURL(blob);
+
+    // 5. Create an invisible anchor (<a>) tag, click it to trigger download, then remove it
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = "Expense_Report.pdf"; // The default file name
+    document.body.appendChild(a);
+    a.click();
+
+    // 6. Clean up
+    a.remove();
+    window.URL.revokeObjectURL(downloadUrl); // Free up browser memory
+
+    // Reset button
+    downloadBtn.innerText = originalText;
+    downloadBtn.disabled = false;
+  } catch (error) {
+    console.error("Download Error:", error);
+    alert(error.message);
+
+    // Reset button on error
+    const downloadBtn = document.getElementById("downloadBtn");
+    downloadBtn.innerText = "Download Report";
+    downloadBtn.disabled = false;
+  }
+});

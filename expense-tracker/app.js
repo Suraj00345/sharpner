@@ -1,5 +1,4 @@
 require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -11,6 +10,7 @@ const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const premiumRoutes = require("./routes/premiumRoutes");
 const aiRoutes = require("./routes/aiRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 // models
 const User = require("./models/User");
@@ -40,6 +40,7 @@ app.use("/api/auth", userRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/premium", premiumRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/reports", reportRoutes);
 
 // ======================================================
 // USER - EXPENSE RELATION

@@ -34,6 +34,8 @@ loginForm.addEventListener("submit", async (event) => {
     // Login successful
     alert(data.message);
     console.log("Logged in user:", data.user);
+    // Save token and user details to localStorage
+    localStorage.setItem("token", data.token);
     // Store logged-in user
     localStorage.setItem("user", JSON.stringify(data.user));
     // Check stored user
