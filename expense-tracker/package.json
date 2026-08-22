@@ -15,9 +15,11 @@
     "bcrypt": "^6.0.0",
     "cashfree-pg": "^6.0.5",
     "cors": "^2.8.6",
+    "crypto": "^1.0.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mysql2": "^3.23.3",
+    "nodemailer": "^9.0.5",
     "sequelize": "^6.37.8"
   }
 }
