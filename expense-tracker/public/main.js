@@ -1,22 +1,44 @@
 const API_URL = "http://localhost:3000/api/";
 
+let currentPage = 1;
 let editExpenseId = null;
+
+// ======================================================
+// AXIOS INTERCEPTOR (Attaches JWT Token to EVERY Request)
+// ======================================================
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // ======================================================
 // USER HELPER FUNCTIONS
 // ======================================================
+function getToken() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Please log in first.");
+    window.location.href = "login.html";
+    throw new Error("No token found");
+  }
+  return token;
+}
+
 function getCurrentUser() {
   const storedUser = localStorage.getItem("user");
   if (!storedUser) {
-    alert("Please login first.");
+    alert("Please log in first.");
     window.location.href = "login.html";
     throw new Error("User not logged in");
   }
   return JSON.parse(storedUser);
 }
-
-// Initial user fetch
-let user = getCurrentUser();
 
 // ======================================================
 // DOM ELEMENTS
@@ -29,29 +51,90 @@ const closeLeaderboard = document.getElementById("closeLeaderboard");
 const leaderboardList = document.getElementById("leaderboardList");
 const downloadBtn = document.getElementById("downloadBtn");
 
+const expenseList = document.getElementById("expenseList");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const pageInfo = document.getElementById("pageInfo");
+
 // ======================================================
-// PREMIUM UI
+// PREMIUM UI STATUS
 // ======================================================
 function checkPremiumStatus() {
-  const currentUser = getCurrentUser();
+  try {
+    const currentUser = getCurrentUser();
 
-  if (currentUser.isPremium) {
-    if (premiumBtn) premiumBtn.style.display = "none";
-    if (leaderboardBtn) leaderboardBtn.style.display = "inline-block";
-    if (downloadBtn) downloadBtn.style.display = "inline-block";
+    if (currentUser.isPremium) {
+      if (premiumBtn) premiumBtn.style.display = "none";
+      if (leaderboardBtn) leaderboardBtn.style.display = "inline-block";
+      if (downloadBtn) downloadBtn.style.display = "inline-block";
 
-    if (premiumMessage) {
-      premiumMessage.innerHTML = `
-        <div class="premium-success">
-          <h4>Hi ${currentUser.name?.split(" ")[0] || "User"}, thanks for being a Premium member ❤️</h4>
-        </div>
-      `;
+      if (premiumMessage) {
+        premiumMessage.innerHTML = `
+          <div class="premium-success">
+            <h4>Hi ${currentUser.name?.split(" ")[0] || "User"}, thanks for being a Premium member ❤️</h4>
+          </div>
+        `;
+      }
+    } else {
+      if (leaderboardBtn) leaderboardBtn.style.display = "none";
+      if (downloadBtn) downloadBtn.style.display = "none";
+      if (premiumBtn) premiumBtn.style.display = "inline-block";
     }
-  } else {
-    if (leaderboardBtn) leaderboardBtn.style.display = "none";
-    if (downloadBtn) downloadBtn.style.display = "none";
-    if (premiumBtn) premiumBtn.style.display = "inline-block";
+  } catch (err) {
+    console.warn("Could not check premium status:", err.message);
   }
+}
+
+// ======================================================
+// FETCH & RENDER EXPENSES WITH EDIT/DELETE BUTTONS
+// ======================================================
+async function fetchExpenses(page = 1) {
+  try {
+    const res = await axios.get(`${API_URL}expenses?page=${page}&limit=5`);
+    const data = res.data;
+
+    currentPage = data.currentPage || page;
+
+    renderExpenses(data.expenses || []);
+
+    if (pageInfo) {
+      pageInfo.textContent = `Page ${data.currentPage} of ${data.totalPages || 1}`;
+    }
+    if (prevBtn) prevBtn.disabled = !data.hasPreviousPage;
+    if (nextBtn) nextBtn.disabled = !data.hasNextPage;
+  } catch (error) {
+    console.error("Fetch Expenses Error:", error.response?.data || error.message);
+  }
+}
+
+function renderExpenses(expenses) {
+  if (!expenseList) return;
+  expenseList.innerHTML = "";
+
+  if (expenses.length === 0) {
+    expenseList.innerHTML = "<li>No expenses found.</li>";
+    return;
+  }
+
+  expenses.forEach((expense) => {
+    const li = document.createElement("li");
+    li.id = `expense-${expense.id}`;
+    li.textContent = `₹${expense.amount} - ${expense.category} - ${expense.description || ""} `;
+
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Edit";
+    editBtn.className = "btn-edit";
+    editBtn.onclick = () => editExpenseDetails(expense);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.className = "btn-delete";
+    deleteBtn.onclick = () => deleteExpense(expense.id);
+
+    li.appendChild(editBtn);
+    li.appendChild(deleteBtn);
+    expenseList.appendChild(li);
+  });
 }
 
 // ======================================================
@@ -65,7 +148,6 @@ async function handleFormSubmit(event) {
   let category = event.target.category.value;
 
   try {
-    // Determine category with Gemini if description is provided
     try {
       const aiResponse = await axios.post(`${API_URL}ai/categorize`, {
         description: description,
@@ -75,82 +157,27 @@ async function handleFormSubmit(event) {
         event.target.category.value = category;
       }
     } catch (aiErr) {
-      console.warn(
-        "AI categorization failed, using selected/default category:",
-        aiErr.message,
-      );
+      console.warn("AI categorization fallback:", aiErr.message);
     }
 
     const expenseDetails = {
       amount: Number(amount),
       description: description,
       category: category,
-      userId: getCurrentUser().id,
-    }; // UPDATE EXPENSE
+    };
 
     if (editExpenseId) {
-      const res = await axios.put(
-        `${API_URL}expenses/${editExpenseId}`,
-        expenseDetails,
-      );
-
-      const oldElement = document.getElementById(`expense-${editExpenseId}`);
-      if (oldElement) oldElement.remove();
-
-      showExpenseOnScreen(res.data.expense);
+      await axios.put(`${API_URL}expenses/${editExpenseId}`, expenseDetails);
       editExpenseId = null;
-    } else // CREATE EXPENSE
-    {
-      const res = await axios.post(`${API_URL}expenses`, expenseDetails);
-      showExpenseOnScreen(res.data.expense);
+    } else {
+      await axios.post(`${API_URL}expenses`, expenseDetails);
     }
 
     event.target.reset();
+    fetchExpenses(currentPage);
   } catch (error) {
-    console.error(
-      "Error saving expense:",
-      error.response?.data || error.message,
-    );
+    console.error("Error saving expense:", error.response?.data || error.message);
     alert(error.response?.data?.message || "Failed to save expense.");
-  }
-}
-
-// ======================================================
-// FETCH EXPENSES
-// ======================================================
-window.addEventListener("DOMContentLoaded", async () => {
-  checkPremiumStatus();
-
-  try {
-    const currentUser = getCurrentUser();
-    const res = await axios.get(`${API_URL}expenses`);
-    const expenses = res.data.expenses || []; // Filter by current user
-
-    const userExpenses = expenses.filter(
-      (expense) => Number(expense.userId) === Number(currentUser.id),
-    );
-
-    userExpenses.forEach((expense) => showExpenseOnScreen(expense));
-  } catch (error) {
-    console.error(
-      "Error fetching expenses:",
-      error.response?.data || error.message,
-    );
-  }
-});
-
-// ======================================================
-// DELETE EXPENSE
-// ======================================================
-async function deleteExpense(id, element) {
-  try {
-    await axios.delete(`${API_URL}expenses/${id}`);
-    element.remove();
-  } catch (error) {
-    console.error(
-      "Error deleting expense:",
-      error.response?.data || error.message,
-    );
   }
 }
 
@@ -166,36 +193,22 @@ function editExpenseDetails(expense) {
 }
 
 // ======================================================
-// DISPLAY EXPENSE
+// DELETE EXPENSE
 // ======================================================
-function showExpenseOnScreen(expense) {
-  const parentElem = document.getElementById("expenseList");
-  if (!parentElem) return;
-
-  const childElem = document.createElement("li");
-  childElem.id = `expense-${expense.id}`;
-  childElem.textContent = `${expense.amount} - ${expense.category} - ${expense.description} `;
-
-  const editBtn = document.createElement("button");
-  editBtn.textContent = "Edit Expense";
-  editBtn.className = "btn-edit";
-  editBtn.onclick = () => editExpenseDetails(expense);
-
-  const deleteBtn = document.createElement("button");
-  deleteBtn.textContent = "Delete Expense";
-  deleteBtn.className = "btn-delete";
-  deleteBtn.onclick = () => deleteExpense(expense.id, childElem);
-
-  childElem.appendChild(editBtn);
-  childElem.appendChild(deleteBtn);
-  parentElem.appendChild(childElem);
+async function deleteExpense(id) {
+  try {
+    await axios.delete(`${API_URL}expenses/${id}`);
+    fetchExpenses(currentPage);
+  } catch (error) {
+    console.error("Error deleting expense:", error.response?.data || error.message);
+    alert("Failed to delete expense.");
+  }
 }
 
 // ======================================================
 // CASHFREE PAYMENT
 // ======================================================
-const cashfree =
-  typeof Cashfree !== "undefined" ? Cashfree({ mode: "sandbox" }) : null;
+const cashfree = typeof Cashfree !== "undefined" ? Cashfree({ mode: "sandbox" }) : null;
 
 if (premiumBtn) {
   premiumBtn.addEventListener("click", async () => {
@@ -210,9 +223,13 @@ if (premiumBtn) {
       premiumBtn.disabled = true;
       premiumBtn.textContent = "Creating payment...";
 
+      const token = getToken();
       const response = await fetch(`${API_URL}payment/create-order`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ userId: currentUser.id }),
       });
 
@@ -235,7 +252,10 @@ if (premiumBtn) {
 
       const verifyResponse = await fetch(`${API_URL}payment/verify-payment`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           orderId: data.orderId,
           userId: currentUser.id,
@@ -297,13 +317,7 @@ if (leaderboardBtn) {
         const rank = document.createElement("span");
         rank.className = "leaderboard-rank";
         rank.textContent =
-          index === 0
-            ? "🥇"
-            : index === 1
-              ? "🥈"
-              : index === 2
-                ? "🥉"
-                : `#${index + 1}`;
+          index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`;
 
         const name = document.createElement("span");
         name.className = "leaderboard-name";
@@ -319,17 +333,14 @@ if (leaderboardBtn) {
         leaderboardList.appendChild(row);
       });
     } catch (error) {
-      console.error(
-        "Leaderboard error:",
-        error.response?.data || error.message,
-      );
+      console.error("Leaderboard error:", error.response?.data || error.message);
       leaderboardList.innerHTML = "<p>Unable to load leaderboard.</p>";
     }
   });
 }
 
 // ======================================================
-// MODAL CONTROLS
+// MODAL CONTROLS & DOWNLOAD REPORT
 // ======================================================
 if (closeLeaderboard) {
   closeLeaderboard.addEventListener("click", () => {
@@ -345,129 +356,67 @@ if (leaderboardModal) {
   });
 }
 
-// ======================================================
-// DOWNLOAD BUTTON
-// ======================================================
+if (downloadBtn) {
+  downloadBtn.addEventListener("click", async () => {
+    try {
+      const token = getToken();
 
-downloadBtn.addEventListener("click", async () => {
-  try {
-    // 1. Get the JWT token you saved during login
-    // (Assuming you stored it in localStorage as 'token')
-    const token = localStorage.getItem("token"); // console.log(token)
+      const originalText = downloadBtn.innerText;
+      downloadBtn.innerText = "Generating PDF...";
+      downloadBtn.disabled = true;
 
-    if (!token) {
-      alert("Please log in to download reports.");
-      return;
-    } // Optional: Change button text to show it's loading
-
-    const downloadBtn = document.getElementById("downloadBtn");
-    const originalText = downloadBtn.innerText;
-    downloadBtn.innerText = "Generating PDF...";
-    downloadBtn.disabled = true; // 2. Make the request to your backend route
-    // UPDATE THIS URL to match your actual backend route!
-
-    const response = await fetch(
-      "http://localhost:3000/api/reports/downloadPdf",
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`, // Send the token for your userAuth middleware
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to download report");
-    } // 3. Convert the response into a Blob (a file-like object of immutable, raw data)
-
-    const blob = await response.blob(); // 4. Create a temporary URL for the Blob
-
-    const downloadUrl = window.URL.createObjectURL(blob); // 5. Create an invisible anchor (<a>) tag, click it to trigger download, then remove it
-
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = "Expense_Report.pdf"; // The default file name
-    document.body.appendChild(a);
-    a.click(); // 6. Clean up
-
-    a.remove();
-    window.URL.revokeObjectURL(downloadUrl); // Free up browser memory
-    // Reset button
-
-    downloadBtn.innerText = originalText;
-    downloadBtn.disabled = false;
-  } catch (error) {
-    console.error("Download Error:", error);
-    alert(error.message); // Reset button on error
-
-    const downloadBtn = document.getElementById("downloadBtn");
-    downloadBtn.innerText = "Download Report";
-    downloadBtn.disabled = false;
-  }
-});
-
-let currentPage = 1;
-
-const expenseList = document.getElementById("expenseList");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-const pageInfo = document.getElementById("pageInfo");
-
-async function fetchExpenses(page = 1) {
-  const token = localStorage.getItem("token");
-
-  try {
-    const response = await fetch(
-      `http://localhost:3000/api/expenses?page=${page}&limit=5`,
-      {
+      const response = await fetch(`${API_URL}reports/downloadPdf`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-      },
-    );
+      });
 
-    if (!response.ok) throw new Error("Failed to load expenses");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to download report");
+      }
 
-    const data = await response.json(); // Update state
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
 
-    currentPage = data.currentPage; // 1. Render Expenses
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = "Expense_Report.pdf";
+      document.body.appendChild(a);
+      a.click();
 
-    renderExpenses(data.expenses); // 2. Update Pagination UI
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
 
-    pageInfo.textContent = `Page ${data.currentPage} of ${data.totalPages || 1}`;
-    prevBtn.disabled = !data.hasPreviousPage;
-    nextBtn.disabled = !data.hasNextPage;
-  } catch (error) {
-    console.error("Fetch Error:", error);
-  }
-}
+      downloadBtn.innerText = originalText;
+      downloadBtn.disabled = false;
+    } catch (error) {
+      console.error("Download Error:", error);
+      alert(error.message);
 
-function renderExpenses(expenses) {
-  expenseList.innerHTML = "";
-
-  if (expenses.length === 0) {
-    expenseList.innerHTML = "<li>No expenses found.</li>";
-    return;
-  }
-
-  expenses.forEach((item) => {
-    const li = document.createElement("li");
-    li.textContent = `${item.description || "Expense"} - $${item.amount} [${item.category}]`;
-    expenseList.appendChild(li);
+      downloadBtn.innerText = "Download Report";
+      downloadBtn.disabled = false;
+    }
   });
 }
 
-// Event Listeners for Pagination
-prevBtn.addEventListener("click", () => {
-  if (currentPage > 1) fetchExpenses(currentPage - 1);
-});
+// ======================================================
+// INITIALIZATION & EVENT LISTENERS
+// ======================================================
+if (prevBtn) {
+  prevBtn.addEventListener("click", () => {
+    if (currentPage > 1) fetchExpenses(currentPage - 1);
+  });
+}
 
-nextBtn.addEventListener("click", () => {
-  fetchExpenses(currentPage + 1);
-});
+if (nextBtn) {
+  nextBtn.addEventListener("click", () => {
+    fetchExpenses(currentPage + 1);
+  });
+}
 
-// Initial Load
-document.addEventListener("DOMContentLoaded", () => fetchExpenses(1));
+document.addEventListener("DOMContentLoaded", () => {
+  checkPremiumStatus();
+  fetchExpenses(1);
+});

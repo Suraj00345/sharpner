@@ -75,7 +75,7 @@ const downloadPDFReport = async (req, res) => {
     doc
       .fontSize(14)
       .font("Helvetica-Bold")
-      .text(`Total: $${totalAmount}`, 400, doc.y);
+      .text(`Total: ₹${totalAmount}`, 400, doc.y);
 
     // Finalize the PDF and end the stream
     doc.end();

@@ -17,6 +17,7 @@ const User = require("./models/User");
 const Expense = require("./models/Expense");
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 // ======================================================
 // MIDDLEWARE
@@ -67,9 +68,9 @@ console.log("Cashfree Secret exists:", !!process.env.CASHFREE_SECRET_KEY);
 // ======================================================
 
 sequelize
-  .sync({ force: true })
+  .sync()
   .then(() => {
-    app.listen(3000, () => {
+    app.listen(PORT, () => {
       console.log("Server running on http://localhost:3000");
     });
   })
