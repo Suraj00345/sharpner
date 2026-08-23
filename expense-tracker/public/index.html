@@ -50,18 +50,23 @@
         </div>
 
         <button type="submit" class="btn-submit">Add Expense</button>
-        <div style="display: flex; justify-content: space-between;">
-          <button id="leaderboardBtn">
-            Show Leaderboard
-          </button>
-          <button id="downloadBtn">
-            Download Report
-          </button>
+        <div style="display: flex; justify-content: space-between">
+          <button id="leaderboardBtn">Show Leaderboard</button>
+          <button id="downloadBtn">Download Report</button>
         </div>
       </form>
 
       <h3>Expenses List</h3>
       <ul id="expenseList"></ul>
+      <!-- Pagination Controls -->
+      <div
+        class="pagination-container"
+        style="display: flex; gap: 10px; align-items: center; margin-top: 15px"
+      >
+        <button id="prevBtn" disabled>Previous</button>
+        <span id="pageInfo">Page 1</span>
+        <button id="nextBtn" disabled>Next</button>
+      </div>
     </div>
     <!-- modal -->
     <div id="leaderboardModal" class="leaderboard-modal" style="display: none">

@@ -7,10 +7,8 @@ const User = require("../models/User");
 const createCashfreeOrder = async (req, res) => {
   try {
     const userId = req.body.userId;
-
     // Find user
     const user = await User.findByPk(userId);
-
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -28,35 +26,24 @@ const createCashfreeOrder = async (req, res) => {
 
     // Create unique order ID
     const orderId = `premium_${user.id}_${Date.now()}`;
-
     // Create Cashfree order
     const response = await fetch("https://sandbox.cashfree.com/pg/orders", {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json",
-
         "x-client-id": process.env.CASHFREE_APP_ID,
-
         "x-client-secret": process.env.CASHFREE_SECRET_KEY,
-
         "x-api-version": "2025-01-01",
       },
 
       body: JSON.stringify({
         order_id: orderId,
-
         order_amount: 99,
-
         order_currency: "INR",
-
         customer_details: {
           customer_id: String(user.id),
-
           customer_name: user.name,
-
           customer_email: user.email,
-
           customer_phone: "9999999999",
         },
 
@@ -67,36 +54,28 @@ const createCashfreeOrder = async (req, res) => {
     });
 
     const data = await response.json();
-
     // Cashfree returned an error
     if (!response.ok) {
       console.error("Cashfree error:", data);
-
       return res.status(response.status).json({
         success: false,
-
         message: "Failed to create Cashfree order",
-
         error: data,
       });
     }
 
-    console.log("Cashfree order created:", data);
+    // console.log("Cashfree order created:", data);
 
     // Send required information to frontend
     res.status(200).json({
       success: true,
-
       orderId: data.order_id,
-
       paymentSessionId: data.payment_session_id,
     });
   } catch (error) {
     console.error("Create order error:", error);
-
     res.status(500).json({
       success: false,
-
       message: "Internal server error",
     });
   }
@@ -114,7 +93,6 @@ const verifyCashfreePayment = async (req, res) => {
     if (!orderId || !userId) {
       return res.status(400).json({
         success: false,
-
         message: "orderId and userId are required",
       });
     }
@@ -128,7 +106,6 @@ const verifyCashfreePayment = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-
         message: "User not found",
       });
     }
@@ -141,14 +118,10 @@ const verifyCashfreePayment = async (req, res) => {
       `https://sandbox.cashfree.com/pg/orders/${orderId}/payments`,
       {
         method: "GET",
-
         headers: {
           "x-client-id": process.env.CASHFREE_APP_ID,
-
           "x-client-secret": process.env.CASHFREE_SECRET_KEY,
-
           "x-api-version": "2025-01-01",
-
           Accept: "application/json",
         },
       },
@@ -156,7 +129,7 @@ const verifyCashfreePayment = async (req, res) => {
 
     const payments = await response.json();
 
-    console.log("Cashfree payments:", payments);
+    // console.log("Cashfree payments:", payments);
 
     // ----------------------------------------------
     // Cashfree API error
@@ -165,9 +138,7 @@ const verifyCashfreePayment = async (req, res) => {
     if (!response.ok) {
       return res.status(response.status).json({
         success: false,
-
         message: "Unable to verify payment",
-
         error: payments,
       });
     }
@@ -180,7 +151,7 @@ const verifyCashfreePayment = async (req, res) => {
       (payment) => payment.payment_status === "SUCCESS",
     );
 
-    console.log("Payment successful:", paymentSuccessful);
+    // console.log("Payment successful:", paymentSuccessful);
 
     // ----------------------------------------------
     // Payment NOT successful
@@ -189,7 +160,6 @@ const verifyCashfreePayment = async (req, res) => {
     if (!paymentSuccessful) {
       return res.status(400).json({
         success: false,
-
         message: "Payment was not successful",
       });
     }
@@ -199,9 +169,7 @@ const verifyCashfreePayment = async (req, res) => {
     // ----------------------------------------------
 
     user.isPremium = true;
-
     await user.save();
-
     console.log(`User ${user.id} is now premium`);
 
     // ----------------------------------------------
@@ -210,17 +178,13 @@ const verifyCashfreePayment = async (req, res) => {
 
     res.status(200).json({
       success: true,
-
       message: "Payment successful. You are now a premium member!",
-
       isPremium: true,
     });
   } catch (error) {
     console.error("Payment verification error:", error);
-
     res.status(500).json({
       success: false,
-
       message: "Payment verification failed",
     });
   }

@@ -42,10 +42,10 @@ function checkPremiumStatus() {
 
     if (premiumMessage) {
       premiumMessage.innerHTML = `
-        <div class="premium-success">
-          <h4>Hi ${currentUser.name?.split(" ")[0] || "User"}, thanks for being a Premium member ❤️</h4>
-        </div>
-      `;
+        <div class="premium-success">
+          <h4>Hi ${currentUser.name?.split(" ")[0] || "User"}, thanks for being a Premium member ❤️</h4>
+        </div>
+      `;
     }
   } else {
     if (leaderboardBtn) leaderboardBtn.style.display = "none";
@@ -86,9 +86,8 @@ async function handleFormSubmit(event) {
       description: description,
       category: category,
       userId: getCurrentUser().id,
-    };
+    }; // UPDATE EXPENSE
 
-    // UPDATE EXPENSE
     if (editExpenseId) {
       const res = await axios.put(
         `${API_URL}expenses/${editExpenseId}`,
@@ -100,9 +99,8 @@ async function handleFormSubmit(event) {
 
       showExpenseOnScreen(res.data.expense);
       editExpenseId = null;
-    }
-    // CREATE EXPENSE
-    else {
+    } else // CREATE EXPENSE
+    {
       const res = await axios.post(`${API_URL}expenses`, expenseDetails);
       showExpenseOnScreen(res.data.expense);
     }
@@ -126,9 +124,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   try {
     const currentUser = getCurrentUser();
     const res = await axios.get(`${API_URL}expenses`);
-    const expenses = res.data.expenses || [];
+    const expenses = res.data.expenses || []; // Filter by current user
 
-    // Filter by current user
     const userExpenses = expenses.filter(
       (expense) => Number(expense.userId) === Number(currentUser.id),
     );
@@ -356,27 +353,25 @@ downloadBtn.addEventListener("click", async () => {
   try {
     // 1. Get the JWT token you saved during login
     // (Assuming you stored it in localStorage as 'token')
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token"); // console.log(token)
 
     if (!token) {
       alert("Please log in to download reports.");
       return;
-    }
+    } // Optional: Change button text to show it's loading
 
-    // Optional: Change button text to show it's loading
     const downloadBtn = document.getElementById("downloadBtn");
     const originalText = downloadBtn.innerText;
     downloadBtn.innerText = "Generating PDF...";
-    downloadBtn.disabled = true;
-
-    // 2. Make the request to your backend route
+    downloadBtn.disabled = true; // 2. Make the request to your backend route
     // UPDATE THIS URL to match your actual backend route!
+
     const response = await fetch(
       "http://localhost:3000/api/reports/downloadPdf",
       {
         method: "GET",
         headers: {
-         "Authorization": `Bearer ${token}` // Send the token for your userAuth middleware
+          Authorization: `Bearer ${token}`, // Send the token for your userAuth middleware
         },
       },
     );
@@ -384,35 +379,95 @@ downloadBtn.addEventListener("click", async () => {
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || "Failed to download report");
-    }
+    } // 3. Convert the response into a Blob (a file-like object of immutable, raw data)
 
-    // 3. Convert the response into a Blob (a file-like object of immutable, raw data)
-    const blob = await response.blob();
+    const blob = await response.blob(); // 4. Create a temporary URL for the Blob
 
-    // 4. Create a temporary URL for the Blob
-    const downloadUrl = window.URL.createObjectURL(blob);
+    const downloadUrl = window.URL.createObjectURL(blob); // 5. Create an invisible anchor (<a>) tag, click it to trigger download, then remove it
 
-    // 5. Create an invisible anchor (<a>) tag, click it to trigger download, then remove it
     const a = document.createElement("a");
     a.href = downloadUrl;
     a.download = "Expense_Report.pdf"; // The default file name
     document.body.appendChild(a);
-    a.click();
+    a.click(); // 6. Clean up
 
-    // 6. Clean up
     a.remove();
     window.URL.revokeObjectURL(downloadUrl); // Free up browser memory
-
     // Reset button
+
     downloadBtn.innerText = originalText;
     downloadBtn.disabled = false;
   } catch (error) {
     console.error("Download Error:", error);
-    alert(error.message);
+    alert(error.message); // Reset button on error
 
-    // Reset button on error
     const downloadBtn = document.getElementById("downloadBtn");
     downloadBtn.innerText = "Download Report";
     downloadBtn.disabled = false;
   }
 });
+
+let currentPage = 1;
+
+const expenseList = document.getElementById("expenseList");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const pageInfo = document.getElementById("pageInfo");
+
+async function fetchExpenses(page = 1) {
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await fetch(
+      `http://localhost:3000/api/expenses?page=${page}&limit=5`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) throw new Error("Failed to load expenses");
+
+    const data = await response.json(); // Update state
+
+    currentPage = data.currentPage; // 1. Render Expenses
+
+    renderExpenses(data.expenses); // 2. Update Pagination UI
+
+    pageInfo.textContent = `Page ${data.currentPage} of ${data.totalPages || 1}`;
+    prevBtn.disabled = !data.hasPreviousPage;
+    nextBtn.disabled = !data.hasNextPage;
+  } catch (error) {
+    console.error("Fetch Error:", error);
+  }
+}
+
+function renderExpenses(expenses) {
+  expenseList.innerHTML = "";
+
+  if (expenses.length === 0) {
+    expenseList.innerHTML = "<li>No expenses found.</li>";
+    return;
+  }
+
+  expenses.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = `${item.description || "Expense"} - $${item.amount} [${item.category}]`;
+    expenseList.appendChild(li);
+  });
+}
+
+// Event Listeners for Pagination
+prevBtn.addEventListener("click", () => {
+  if (currentPage > 1) fetchExpenses(currentPage - 1);
+});
+
+nextBtn.addEventListener("click", () => {
+  fetchExpenses(currentPage + 1);
+});
+
+// Initial Load
+document.addEventListener("DOMContentLoaded", () => fetchExpenses(1));

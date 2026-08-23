@@ -33,10 +33,31 @@ const addExpense = async (req, res) => {
 //get All expence (GET)
 const getExpenses = async (req, res) => {
   try {
-    const expenses = await Expense.findAll();
-    res.status(200).json({ success: true, expenses });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5; // Fixed 5 items per page
+    const offset = (page - 1) * limit;
+
+    // findAndCountAll gets both total count and items for the current page
+    const { count, rows: expenses } = await Expense.findAndCountAll({
+      where: { userId: req.user.id },
+      limit: limit,
+      offset: offset,
+      order: [["createdAt", "DESC"]], // Show newest first
+    });
+
+    const totalPages = Math.ceil(count / limit);
+
+    return res.status(200).json({
+      expenses,
+      currentPage: page,
+      totalPages: totalPages,
+      totalExpenses: count,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error("Pagination Error:", error);
+    return res.status(500).json({ message: "Failed to fetch expenses" });
   }
 };
 
