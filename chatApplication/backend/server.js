@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const morgan = require("morgan");
 const dotenv = require("dotenv");
 const connectDB = require("./config/dbConnect");
 const bodyParser = require("body-parser");
@@ -11,15 +12,17 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 const app = express();
 
-//Mongo DB connection
+// MongoDB connection
 connectDB();
 
-//middleware
+// Middleware
+app.use(morgan("dev")); // HTTP request logger middleware
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-//routes
+// Routes
 app.use("/api/auth", authRoute);
 
 app.get("/test", (req, res) => {
@@ -27,5 +30,5 @@ app.get("/test", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("server is listen on PORT 3000");
+  console.log(`Server is running on PORT ${PORT}`);
 });

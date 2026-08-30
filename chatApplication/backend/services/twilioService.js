@@ -1,3 +1,4 @@
+require("dotenv").config(); // Fail-safe import
 const twilio = require("twilio");
 
 // Twilio credentials from env
@@ -20,7 +21,6 @@ const sendOtpToPhoneNumber = async (phoneNumber) => {
       .services(serviceSID)
       .verifications.create({ to: phoneNumber, channel: "sms" });
 
-    console.log("this is my otp response", response);
     return response;
   } catch (error) {
     console.error("Error sending OTP via Twilio:", error.message);
@@ -28,20 +28,23 @@ const sendOtpToPhoneNumber = async (phoneNumber) => {
   }
 };
 
-//verify otp
+// Verify OTP
 const verifyOtp = async (phoneNumber, otp) => {
   try {
-    console.log(`this is my otp ${otp} to the phoneNumber ${phoneNumber}`);
+    console.log(`Verifying OTP ${otp} for phone number ${phoneNumber}`);
+
+    if (!phoneNumber || !otp) {
+      throw new Error("Phone number and OTP code are required.");
+    }
 
     const response = await client.verify.v2
       .services(serviceSID)
       .verificationChecks.create({ to: phoneNumber, code: otp });
 
-    console.log("this is my otp response", response);
-    return response;
+    return response; // Check response.status === "approved" in your controller
   } catch (error) {
-    console.error(error);
-    throw new Error("otp verification");
+    console.error("Error verifying OTP via Twilio:", error.message);
+    throw error;
   }
 };
 
