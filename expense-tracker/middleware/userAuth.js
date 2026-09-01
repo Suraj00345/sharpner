@@ -32,7 +32,7 @@ const authenticate = async (req, res, next) => {
     // Attach the user object to the request so controllers can use req.user
     req.user = user;
 
-    console.log(user);
+    console.log("user--->>", req.user.id);
 
     // Proceed to the next middleware or controller
     next();

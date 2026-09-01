@@ -3,11 +3,12 @@ const Expense = require("../models/Expense");
 //create Expence(POST)
 const addExpense = async (req, res) => {
   try {
-    // console.log("Request body:", req.body);
+    console.log("Request body:", req.body);
 
-    const { amount, description, category, userId } = req.body;
+    const { amount, description, category } = req.body;
 
     // console.log("userId:", userId);
+    const userId = req.user.id;
 
     const newExpense = await Expense.create({
       amount,

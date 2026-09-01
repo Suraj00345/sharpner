@@ -3,9 +3,8 @@ const API_URL = "http://localhost:3000/api/";
 let currentPage = 1;
 let editExpenseId = null;
 
-// ======================================================
 // AXIOS INTERCEPTOR (Attaches JWT Token to EVERY Request)
-// ======================================================
+
 axios.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -14,12 +13,11 @@ axios.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-// ======================================================
 // USER HELPER FUNCTIONS
-// ======================================================
+
 function getToken() {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -40,9 +38,8 @@ function getCurrentUser() {
   return JSON.parse(storedUser);
 }
 
-// ======================================================
 // DOM ELEMENTS
-// ======================================================
+
 const premiumBtn = document.getElementById("premiumBtn");
 const premiumMessage = document.getElementById("premiumMessage");
 const leaderboardBtn = document.getElementById("leaderboardBtn");
@@ -56,9 +53,8 @@ const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
 
-// ======================================================
 // PREMIUM UI STATUS
-// ======================================================
+
 function checkPremiumStatus() {
   try {
     const currentUser = getCurrentUser();
@@ -85,9 +81,8 @@ function checkPremiumStatus() {
   }
 }
 
-// ======================================================
 // FETCH & RENDER EXPENSES WITH EDIT/DELETE BUTTONS
-// ======================================================
+
 async function fetchExpenses(page = 1) {
   try {
     const res = await axios.get(`${API_URL}expenses?page=${page}&limit=5`);
@@ -103,7 +98,10 @@ async function fetchExpenses(page = 1) {
     if (prevBtn) prevBtn.disabled = !data.hasPreviousPage;
     if (nextBtn) nextBtn.disabled = !data.hasNextPage;
   } catch (error) {
-    console.error("Fetch Expenses Error:", error.response?.data || error.message);
+    console.error(
+      "Fetch Expenses Error:",
+      error.response?.data || error.message,
+    );
   }
 }
 
@@ -137,9 +135,8 @@ function renderExpenses(expenses) {
   });
 }
 
-// ======================================================
 // CREATE / UPDATE EXPENSE
-// ======================================================
+
 async function handleFormSubmit(event) {
   event.preventDefault();
 
@@ -176,14 +173,16 @@ async function handleFormSubmit(event) {
     event.target.reset();
     fetchExpenses(currentPage);
   } catch (error) {
-    console.error("Error saving expense:", error.response?.data || error.message);
+    console.error(
+      "Error saving expense:",
+      error.response?.data || error.message,
+    );
     alert(error.response?.data?.message || "Failed to save expense.");
   }
 }
 
-// ======================================================
 // EDIT EXPENSE
-// ======================================================
+
 function editExpenseDetails(expense) {
   document.getElementById("amount").value = expense.amount;
   document.getElementById("description").value = expense.description;
@@ -192,23 +191,25 @@ function editExpenseDetails(expense) {
   editExpenseId = expense.id;
 }
 
-// ======================================================
 // DELETE EXPENSE
-// ======================================================
+
 async function deleteExpense(id) {
   try {
     await axios.delete(`${API_URL}expenses/${id}`);
     fetchExpenses(currentPage);
   } catch (error) {
-    console.error("Error deleting expense:", error.response?.data || error.message);
+    console.error(
+      "Error deleting expense:",
+      error.response?.data || error.message,
+    );
     alert("Failed to delete expense.");
   }
 }
 
-// ======================================================
 // CASHFREE PAYMENT
-// ======================================================
-const cashfree = typeof Cashfree !== "undefined" ? Cashfree({ mode: "sandbox" }) : null;
+
+const cashfree =
+  typeof Cashfree !== "undefined" ? Cashfree({ mode: "sandbox" }) : null;
 
 if (premiumBtn) {
   premiumBtn.addEventListener("click", async () => {
@@ -284,9 +285,8 @@ if (premiumBtn) {
   });
 }
 
-// ======================================================
 // LEADERBOARD
-// ======================================================
+
 if (leaderboardBtn) {
   leaderboardBtn.addEventListener("click", async () => {
     const currentUser = getCurrentUser();
@@ -317,7 +317,13 @@ if (leaderboardBtn) {
         const rank = document.createElement("span");
         rank.className = "leaderboard-rank";
         rank.textContent =
-          index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`;
+          index === 0
+            ? "🥇"
+            : index === 1
+              ? "🥈"
+              : index === 2
+                ? "🥉"
+                : `#${index + 1}`;
 
         const name = document.createElement("span");
         name.className = "leaderboard-name";
@@ -333,15 +339,17 @@ if (leaderboardBtn) {
         leaderboardList.appendChild(row);
       });
     } catch (error) {
-      console.error("Leaderboard error:", error.response?.data || error.message);
+      console.error(
+        "Leaderboard error:",
+        error.response?.data || error.message,
+      );
       leaderboardList.innerHTML = "<p>Unable to load leaderboard.</p>";
     }
   });
 }
 
-// ======================================================
 // MODAL CONTROLS & DOWNLOAD REPORT
-// ======================================================
+
 if (closeLeaderboard) {
   closeLeaderboard.addEventListener("click", () => {
     leaderboardModal.style.display = "none";
@@ -401,9 +409,8 @@ if (downloadBtn) {
   });
 }
 
-// ======================================================
 // INITIALIZATION & EVENT LISTENERS
-// ======================================================
+
 if (prevBtn) {
   prevBtn.addEventListener("click", () => {
     if (currentPage > 1) fetchExpenses(currentPage - 1);
