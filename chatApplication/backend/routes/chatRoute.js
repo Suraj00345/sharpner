@@ -1,7 +1,6 @@
 const express = require("express");
 const chatController = require("../controllers/chatController");
 const authMiddleware = require("../middleware/authMiddleware");
-const testMiddlware = require("../middleware/testMiddleware")
 const { multerMiddleware } = require("../config/cloudinaryConfig");
 const testMiddleware = require("../middleware/testMiddleware");
 
