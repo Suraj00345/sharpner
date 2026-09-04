@@ -21,13 +21,16 @@ connectDB();
 
 const corsOptions = {
   origin: process.env.FRONTEND_URL,
+  credentials: true,               // Sets Access-Control-Allow-Credentials to 'true'
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
+//cors
 app.use(cors(corsOptions));
 
 // Middleware
 app.use(morgan("dev")); // HTTP request logger middleware
-app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
