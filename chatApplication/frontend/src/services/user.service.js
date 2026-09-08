@@ -30,7 +30,7 @@ export const verifyOtp = async (phoneNumber, phoneSuffix, otp, email) => {
 export const updateUserProfile = async (updateData) => {
   try {
     const response = await axiosInstance.put(
-      "/auth/update-proflie",
+      "/auth/update-profile",
       updateData,
     );
     return response.data;

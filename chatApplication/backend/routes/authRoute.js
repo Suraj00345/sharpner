@@ -10,7 +10,7 @@ router.post("/verify-otp", authController.verifyOtp);
 router.get("/logout", authController.logout);
 
 //protected route
-router.put("/update-proflie",authMiddleware,multerMiddleware,authController.updateProfile,);
+router.put("/update-profile",authMiddleware,multerMiddleware,authController.updateProfile,);
 router.get("/check-auth", authMiddleware, authController.checkAuthenticated);
 router.get('/users',authMiddleware,authController.getAllUsers)
 

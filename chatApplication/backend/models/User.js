@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
     emailOtpExpiry: {
       type: Date,
     },
-    ProfilePicture: {
+    profilePicture: {
       type: String,
     },
     about: {

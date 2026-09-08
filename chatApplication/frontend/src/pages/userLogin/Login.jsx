@@ -11,7 +11,7 @@ import {
   FaUser,
   FaWhatsapp,
 } from "react-icons/fa";
-import { toast } from "react-toastify"; // Added missing import
+import { toast } from "react-toastify";
 import Spinner from "../../utils/Spinner";
 
 import useLoginStore from "../../store/useLoginStore";
@@ -19,7 +19,6 @@ import useUserStore from "../../store/useUserStore";
 import useThemeStore from "../../store/useThemeStore";
 
 import countries from "../../utils/countries";
-const quickReactions = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 const avatars = [
   "https://api.dicebear.com/6.x/avataaars/svg?seed=Felix",
@@ -91,14 +90,15 @@ const Login = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [profilePicture, setProfilePicture] = useState(null);
+
+  // Track avatar/file selection cleanly
   const [selectedAvatar, setSelectedAvatar] = useState(avatars[0]);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(avatars[0]);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Forms bound to React Hook Form schema validation
   const {
     register: loginRegister,
     handleSubmit: handleLoginSubmit,
@@ -196,12 +196,21 @@ const Login = () => {
     }
   };
 
+  // Handle local image upload
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setProfilePictureFile(file);
-      setProfilePicture(URL.createObjectURL(file));
+      setSelectedAvatar(null); // Clear selected preset avatar
+      setPreviewUrl(URL.createObjectURL(file));
     }
+  };
+
+  // Handle preset avatar selection
+  const handleAvatarSelect = (avatarUrl) => {
+    setSelectedAvatar(avatarUrl);
+    setProfilePictureFile(null); // Clear uploaded file
+    setPreviewUrl(avatarUrl);
   };
 
   const onProfileSubmit = async (data) => {
@@ -211,13 +220,17 @@ const Login = () => {
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("agreed", data.agreed);
-      if (profilePictureFile) {
-        formData.append("media", profilePictureFile);
-      } else {
-        formData.append("ProfilePicture", selectedAvatar);
-      }
 
-      await updateUserProfile(formData);
+      // Ensure only ONE profile picture source is appended
+      if (profilePictureFile instanceof File) {
+        formData.append("profilePicture", profilePictureFile); // Read by multer as req.file
+      } else if (selectedAvatar) {
+        formData.append("profilePicture", selectedAvatar); // Read by express as req.body.profilePicture
+      }
+      const response = await updateUserProfile(formData);
+      if (response?.data?.user) {
+        setUser(response.data.user);
+      }
       toast.success("Welcome to WhatsApp");
       navigate("/");
       resetLoginState();
@@ -532,7 +545,7 @@ const Login = () => {
               {/* Profile Picture / Upload Circle */}
               <div className="relative w-24 h-24 mb-3">
                 <img
-                  src={selectedAvatar || profilePicture}
+                  src={previewUrl}
                   alt="Profile preview"
                   className="w-full h-full rounded-full object-cover border-2 border-green-500"
                 />
@@ -555,7 +568,9 @@ const Login = () => {
               {avatars?.length > 0 && (
                 <div className="w-full text-center">
                   <p
-                    className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-500"}  mb-2`}
+                    className={`text-sm ${
+                      theme === "dark" ? "text-gray-300" : "text-gray-500"
+                    } mb-2`}
                   >
                     Or choose an avatar:
                   </p>
@@ -565,11 +580,9 @@ const Login = () => {
                         key={index}
                         src={avatar}
                         alt={`Avatar ${index + 1}`}
-                        onClick={() => {
-                          setSelectedAvatar(avatar);
-                        }}
-                        className={`w-12 h-12 rounded-full cursor-pointer border-2 transition ease-in-out  ${
-                          selectedAvatar === avatar && !profilePicture
+                        onClick={() => handleAvatarSelect(avatar)}
+                        className={`w-12 h-12 rounded-full cursor-pointer border-2 transition ease-in-out ${
+                          selectedAvatar === avatar
                             ? "border-green-500 scale-110"
                             : "border-transparent opacity-70 hover:opacity-100"
                         }`}
@@ -583,7 +596,6 @@ const Login = () => {
             {/* Username Field */}
             <div>
               <label className="block text-sm font-medium mb-1 items-center text-gray-500 gap-2">
-                {" "}
                 Username
               </label>
               <input
@@ -609,7 +621,11 @@ const Login = () => {
                 type="checkbox"
                 id="agreed"
                 {...profileRegister("agreed")}
-                className={`rounded ${theme === "dark" ? " border-gray-700 text-green-600" : "text-green-500"}  focus:ring-green-500 cursor-pointer`}
+                className={`rounded ${
+                  theme === "dark"
+                    ? "border-gray-700 text-green-600"
+                    : "text-green-500"
+                } focus:ring-green-500 cursor-pointer`}
               />
               <label
                 htmlFor="agreed"

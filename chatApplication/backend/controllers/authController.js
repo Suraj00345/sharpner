@@ -3,8 +3,9 @@ const otpGenerate = require("../utils/otpGenerator");
 const response = require("../utils/responseHandler");
 const generateToken = require("../utils/generateTokens");
 const sendOtpToEmail = require("../services/emailService");
-const { uplaodFileToCloudinary } = require("../config/cloudinaryConfig");
+const { uploadFileToCloudinary } = require("../config/cloudinaryConfig");
 const Conversation = require("../models/Conversation");
+const fs = require("fs");
 
 // Send OTP (Email or Phone)
 const sendOTP = async (req, res) => {
@@ -198,25 +199,49 @@ const verifyOtp = async (req, res) => {
 
 // Update Profile
 const updateProfile = async (req, res) => {
-  const { username, agreed, about } = req.body;
-  const userId = req.user.userID;
-  console.log(userId);
+  const { username, agreed, about, profilePicture } = req.body;
+  const userId = req.user?.userID || req.user?._id;
+
   try {
     const user = await User.findById(userId);
     if (!user) {
+      // Clean up uploaded file if user doesn't exist
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
       return response(res, 404, "User not found");
     }
+
+    // 1. Handle Profile Picture (File upload takes priority)
     if (req.file) {
-      const uploadResult = await uplaodFileToCloudinary(req.file);
-      user.ProfilePicture = uploadResult?.secure_url;
-    } else if (req.body.profilePicture) {
-      user.ProfilePicture = req.body.profilePicture;
+      try {
+        const uploadResult = await uploadFileToCloudinary(req.file);
+        if (uploadResult?.secure_url) {
+          user.profilePicture = uploadResult.secure_url;
+        }
+      } catch (uploadError) {
+        // Guarantee local temp file deletion if Cloudinary fails
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        throw uploadError;
+      }
+    } else if (profilePicture) {
+      user.profilePicture = profilePicture;
     }
+
+    // 2. Handle Text Fields cleanly
     if (username) user.username = username.trim();
-    if (about) user.about = about.trim();
-    if (agreed) user.agreed = agreed;
+    if (about !== undefined) user.about = about.trim();
+
+    // 3. Handle Boolean Conversion safely
+    if (agreed !== undefined) {
+      user.agreed = agreed === true || agreed === "true";
+    }
+
     await user.save();
-    return response(res, 200, "User profile updated successfully", user);
+
+    return response(res, 200, "User profile updated successfully", { user });
   } catch (error) {
     console.error("updateProfile Error:", error);
     return response(res, 500, error.message || "Internal server error");
@@ -256,7 +281,9 @@ const getAllUsers = async (req, res) => {
   const loggedInUser = req.user.userID;
   try {
     const users = await User.find({ _id: { $ne: loggedInUser } })
-      .select("username profilePicture lastSeen isOnline about phoneNumber")
+      .select(
+        "username profilePicture lastSeen isOnline about phoneNumber phoneSuffix",
+      )
       .lean();
 
     const usersWithConversation = await Promise.all(
@@ -275,6 +302,8 @@ const getAllUsers = async (req, res) => {
         };
       }),
     );
+
+    console.log(usersWithConversation);
     return response(
       res,
       200,
@@ -282,7 +311,7 @@ const getAllUsers = async (req, res) => {
       usersWithConversation,
     );
   } catch (error) {
-     console.error("updateProfile Error:", error);
+    console.error("updateProfile Error:", error);
     return response(res, 500, error.message || "Internal server error");
   }
 };
@@ -304,5 +333,5 @@ module.exports = {
   updateProfile,
   logout,
   checkAuthenticated,
-  getAllUsers
+  getAllUsers,
 };
